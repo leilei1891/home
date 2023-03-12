@@ -1,1 +1,93 @@
-self.addEventListener("error",function(e){self.clients.matchAll().then(function(t){t&&t.length&&t[0].postMessage({type:"ERROR",msg:e.message||null,stack:e.error?e.error.stack:null})})}),self.addEventListener("unhandledrejection",function(e){self.clients.matchAll().then(function(t){t&&t.length&&t[0].postMessage({type:"REJECTION",msg:e.reason?e.reason.message:null,stack:e.reason?e.reason.stack:null})})}),importScripts("https://g.alicdn.com/kg/workbox/3.3.0/workbox-sw.js"),workbox.setConfig({debug:!1,modulePathPrefix:"https://g.alicdn.com/kg/workbox/3.3.0/"}),workbox.skipWaiting(),workbox.clientsClaim();var cacheList=["/","/index.html"];workbox.routing.registerRoute(new RegExp(/\.(?:html|css)$/),workbox.strategies.networkFirst({cacheName:"ql:html",plugins:[new workbox.expiration.Plugin({maxEntries:10})]})),workbox.routing.registerRoute(new RegExp(/\.(?:js|css)$/),workbox.strategies.staleWhileRevalidate({cacheName:"ql:static",plugins:[new workbox.expiration.Plugin({maxEntries:20})]})),workbox.routing.registerRoute(new RegExp(/\.(?:png|gif|jpg|jpeg|webp|svg|cur|ttf|woff2|woff)$/),workbox.strategies.cacheFirst({cacheName:"ql:img",plugins:[new workbox.cacheableResponse.Plugin({statuses:[0,200]}),new workbox.expiration.Plugin({maxEntries:20,maxAgeSeconds:43200})]}));
+const CACHE_NAME = 'ICDNCache';
+let cachelist = [];
+self.addEventListener('install', async function (installEvent) {
+    self.skipWaiting();
+    installEvent.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(function (cache) {
+                console.log('Opened cache');
+                return cache.addAll(cachelist);
+            })
+    );
+});
+self.addEventListener('fetch', async event => {
+    try {
+        event.respondWith(handle(event.request))
+    } catch (msg) {
+        event.respondWith(handleerr(event.request, msg))
+    }
+});
+const handleerr = async (req, msg) => {
+    return new Response(`<h1>CDN分流器遇到了致命错误</h1>
+    <b>${msg}</b>`, { headers: { "content-type": "text/html; charset=utf-8" } })
+}
+const lfetch = async (urls, url) => {
+    let controller = new AbortController();
+    const PauseProgress = async (res) => {
+        return new Response(await (res).arrayBuffer(), { status: res.status, headers: res.headers });
+    };
+    if (!Promise.any) {
+        Promise.any = function (promises) {
+            return new Promise((resolve, reject) => {
+                promises = Array.isArray(promises) ? promises : []
+                let len = promises.length
+                let errs = []
+                if (len === 0) return reject(new AggregateError('All promises were rejected'))
+                promises.forEach((promise) => {
+                    promise.then(value => {
+                        resolve(value)
+                    }, err => {
+                        len--
+                        errs.push(err)
+                        if (len === 0) {
+                            reject(new AggregateError(errs))
+                        }
+                    })
+                })
+            })
+        }
+    }
+    return Promise.any(urls.map(urls => {
+        return new Promise((resolve, reject) => {
+            fetch(urls, {
+                signal: controller.signal
+            })
+                .then(PauseProgress)
+                .then(res => {
+                    if (res.status == 200) {
+                        controller.abort();
+                        resolve(res)
+                    } else {
+                        reject(res)
+                    }
+                })
+        })
+    }))
+}
+self.addEventListener('fetch', async event => {
+    event.respondWith(handle(event.request))
+});
+const fullpath = (path) => {
+    path = path.split('?')[0].split('#')[0]
+    if (path.match(/\/$/)) {
+        path += 'index'
+    }
+    if (!path.match(/\.[a-zA-Z]+$/)) {
+        path += '.html'
+    }
+    return path
+}
+
+const handle = async(req)=>{
+    const urlStr = req.url
+    const urlObj = new URL(urlStr);
+    const urlPath = urlObj.pathname;
+    const domain = urlObj.hostname;
+    //从这里开始
+    if(domain === "guxinlei.cn"){//这里写你需要拦截的域名
+        return lfetch(["https://gxl-home.s3.ladydaily.com"+fullpath(urlPath)])//屏蔽了自带的npm劫持，改为存储桶劫持
+    }
+    else{
+        return fetch(req);
+    }
+}

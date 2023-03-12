@@ -318,7 +318,7 @@ $('#switchmore').on('click', function () {
     } else {
         $('#container').attr('class', 'container');
         $("#change").html("Hello&nbsp;World&nbsp;!");
-        $("#change1").html("一个建立于 21 世纪的小站，存活于互联网的边缘");
+        $("#change1").html("青，取之于蓝而胜于蓝；冰；水为之而寒于水。");
     }
 });
 
@@ -367,7 +367,7 @@ window.addEventListener('load', function () {
             //移动端隐藏更多页面
             $('#container').attr('class', 'container');
             $("#change").html("Hello&nbsp;World&nbsp;!");
-            $("#change1").html("一个建立于 21 世纪的小站，存活于互联网的边缘");
+            $("#change1").html("青，取之于蓝而胜于蓝；冰；水为之而寒于水。");
 
             //移动端隐藏弹窗页面
             $('#box').css("display", "none");
@@ -419,7 +419,7 @@ color: rgb(244,167,89);
 var styleContent = `
 color: rgb(30,152,255);
 `
-var title1 = '無名の主页'
+var title1 = '顾鑫磊の主页'
 var title2 = `
  _____ __  __  _______     ____     __
 |_   _|  \\/  |/ ____\\ \\   / /\\ \\   / /
@@ -429,11 +429,11 @@ var title2 = `
 |_____|_|  |_|_____/   |_|      |_|                                                     
 `
 var content = `
-版 本 号：3.3
-更新日期：2022-07-06
+版 本 号：3.5
+更新日期：2023-03-12
 
-主页:  https://www.imsyy.top
-Github:  https://github.com/imsyy/home
+主页:  https://www.guxinlei.cn/
+Github:  https://github.com/leilei1891/home
 `
 console.log(`%c${title1} %c${title2}
 %c${content}`, styleTitle1, styleTitle2, styleContent)
